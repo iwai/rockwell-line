@@ -36,14 +36,19 @@ $app->post('/webhook', function (ServerRequestInterface $req, ResponseInterface 
         );
 
     } catch (InvalidSignatureException $e) {
+        $this->logger->info(sprintf('%s %s', 400, 'Invalid signature'));
         return $res->withStatus(400, 'Invalid signature');
     } catch (UnknownEventTypeException $e) {
+        $this->logger->info(sprintf('%s %s', 400, 'Unknown event type has come'));
         return $res->withStatus(400, 'Unknown event type has come');
     } catch (UnknownMessageTypeException $e) {
+        $this->logger->info(sprintf('%s %s', 400, 'Unknown message type has come'));
         return $res->withStatus(400, 'Unknown message type has come');
     } catch (InvalidEventRequestException $e) {
+        $this->logger->info(sprintf('%s %s', 400, 'Invalid event request'));
         return $res->withStatus(400, 'Invalid event request');
     } catch (\Exception $e) {
+        $this->logger->info(sprintf('%s %s', 500, 'Internal Server Error'));
         return $res->withStatus(500, 'Internal Server Error');
     }
 
