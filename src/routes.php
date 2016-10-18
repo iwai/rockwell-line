@@ -30,12 +30,14 @@ $app->post('/webhook', function (ServerRequestInterface $req, ResponseInterface 
             new LINEBotHTTPClient($channelAccessToken),
             [ 'channelSecret' => $channelSecret ]
         );
+        $signature = $req->getHeader('X_LINE_SIGNATURE');
+
         $this->logger->info(sprintf(
-            'Sign: %s Request body: %s', $req->getHeader('X_LINE_SIGNATURE'), $req->getBody()
+            'Sign: %s Request body: %s', $signature[0], $req->getBody()
         ));
 
         $events = $bot->parseEventRequest(
-            $req->getBody(), $req->getHeader('X_LINE_SIGNATURE')
+            $req->getBody(), $signature[0]
         );
 
     } catch (InvalidSignatureException $e) {
