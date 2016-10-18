@@ -30,7 +30,9 @@ $app->post('/webhook', function (ServerRequestInterface $req, ResponseInterface 
             new LINEBotHTTPClient($channelAccessToken),
             [ 'channelSecret' => $channelSecret ]
         );
-        $this->logger->info(sprintf('Request body: %s', $req->getBody()));
+        $this->logger->info(sprintf(
+            'Sign: %s Request body: %s', $req->getHeader('X_LINE_SIGNATURE'), $req->getBody()
+        ));
 
         $events = $bot->parseEventRequest(
             $req->getBody(), $req->getHeader('X_LINE_SIGNATURE')
