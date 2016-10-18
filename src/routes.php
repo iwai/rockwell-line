@@ -77,7 +77,16 @@ $app->post('/webhook', function (ServerRequestInterface $req, ResponseInterface 
 
         } elseif ($event instanceof TextMessage) {
 
-            if (preg_match('/^プロフィール$/u', $event->getText()) === 1) {
+            if ($event->isGroupEvent() || $event->isRoomEvent()) {
+                if (preg_match('/^でていけ|出て行け|消えろ$/u', $event->getText()) === 1) {
+                    $event->isGroupEvent()
+                        ? $bot->leaveGroup($event->getGroupId())
+                        : $bot->leaveRoom($event->getRoomId());
+                    continue;
+                }
+            }
+
+            if ($event->isUserEvent() && preg_match('/^プロフィール$/u', $event->getText()) === 1) {
                 $r = $bot->getProfile($event->getUserId());
 
                 if ($r->isSucceeded()) {
@@ -94,6 +103,16 @@ $app->post('/webhook', function (ServerRequestInterface $req, ResponseInterface 
                 }
             } else {
 
+                $client = new GuzzleHttp\Client();
+                $response = $client->post('https://api.yelp.com/oauth2/token',  [
+                    'form_params' => [
+                        'grant_type' => 'client_credentials',
+                        'client_id' => getenv('YELP_APP_ID'),
+                        'client_secret' => getenv('YELP_APP_SECRET')
+                    ]
+                ]);
+                $this->logger->info($response->getBody());
+
                 $replyText = $event->getText();
 
                 $response = $bot->replyText($event->getReplyToken(), $replyText);
@@ -103,6 +122,8 @@ $app->post('/webhook', function (ServerRequestInterface $req, ResponseInterface 
                 ));
 
             }
+        } elseif ($event instanceof MessageEvent\ImageMessage) {
+            $r = $bot->getMessageContent($event->getMessageId());
         }
     }
 
