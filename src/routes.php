@@ -4,6 +4,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 use LINE\LINEBot\HTTPClient\CurlHTTPClient as LINEBotHTTPClient;
+use LINE\LINEBot\Event\FollowEvent;
+use LINE\LINEBot\Event\UnfollowEvent;
 use LINE\LINEBot\Event\MessageEvent;
 use LINE\LINEBot\Event\MessageEvent\TextMessage;
 
@@ -58,22 +60,50 @@ $app->post('/webhook', function (ServerRequestInterface $req, ResponseInterface 
     }
 
     foreach ($events as $event) {
-        if (!($event instanceof MessageEvent)) {
-            $this->logger->info('Non message event has come');
-            continue;
+        if ($event instanceof FollowEvent) {
+
+            $r = $bot->getProfile($event->getUserId());
+
+            if ($r->isSucceeded()) {
+                $profile = $r->getJSONDecodedBody();
+
+                $response = $bot->replyText(
+                    $event->getReplyToken(),
+                    sprintf("%s さん、友達追加ありがとう！", $profile['displayName'])
+                );
+            }
+
+        } elseif ($event instanceof UnfollowEvent) {
+
+        } elseif ($event instanceof TextMessage) {
+
+            if (preg_match('/^プロフィール$/u', $event->getText()) === 1) {
+                $r = $bot->getProfile($event->getUserId());
+
+                if ($r->isSucceeded()) {
+                    $profile = $r->getJSONDecodedBody();
+
+                    $response = $bot->replyText(
+                        $event->getReplyToken(),
+                        sprintf("%s さん\nUrl: %s\nStatus: %s", $profile['displayName'], $profile['pictureUrl'], $profile['statusMessage'])
+                    );
+
+                    $this->logger->info(sprintf(
+                        '%s %s', $response->getHTTPStatus(), $response->getRawBody()
+                    ));
+                }
+            } else {
+
+                $replyText = $event->getText();
+
+                $response = $bot->replyText($event->getReplyToken(), $replyText);
+
+                $this->logger->info(sprintf(
+                    '%s %s', $response->getHTTPStatus(), $response->getRawBody()
+                ));
+
+            }
         }
-        if (!($event instanceof TextMessage)) {
-            $this->logger->info('Non text message has come');
-            continue;
-        }
-
-        $replyText = $event->getText();
-
-        $response = $bot->replyText($event->getReplyToken(), $replyText);
-
-        $this->logger->info(sprintf(
-            '%s %s', $response->getHTTPStatus(), $response->getRawBody()
-        ));
     }
 
     $res->getBody()->write('OK');
